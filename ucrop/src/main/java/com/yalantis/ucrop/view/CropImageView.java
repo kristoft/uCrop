@@ -251,6 +251,28 @@ public class CropImageView extends TransformImageView {
         postRotate(deltaAngle, mCropRect.centerX(), mCropRect.centerY());
     }
 
+    public void postRotateCropRect(float aspectX, float aspectY) {
+        Drawable drawable = getDrawable();
+        if (drawable == null) return;
+
+        float width = Math.abs(getCurrentAngle()) == 90.0
+                ? drawable.getIntrinsicHeight()
+                : drawable.getIntrinsicWidth();
+        float height = Math.abs(getCurrentAngle()) == 90.0
+                ? drawable.getIntrinsicWidth()
+                : drawable.getIntrinsicHeight();
+        float tAspectX = 0;
+        float tAspectY = 0;
+        if (width > height) {
+            tAspectX = aspectX > aspectY ? aspectX : aspectY;
+        } else{
+            tAspectX = aspectX < aspectY ? aspectX : aspectY;
+        }
+        tAspectY = tAspectX == aspectX ? aspectY : aspectX;
+        if (tAspectX == 0 || tAspectY == 0) return;
+        setTargetAspectRatio(tAspectX / tAspectY);
+    }
+
     /**
      * This method cancels all current Runnable objects that represent animations.
      */

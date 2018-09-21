@@ -54,6 +54,8 @@ public class TransformImageView extends ImageView {
     private String mImageInputPath, mImageOutputPath;
     private ExifInfo mExifInfo;
 
+    private BitmapLoadCallback activityBmpLoadCallback;
+
     /**
      * Interface for rotation and scale change notifying.
      */
@@ -117,6 +119,10 @@ public class TransformImageView extends ImageView {
         setImageDrawable(new FastBitmapDrawable(bitmap));
     }
 
+    public void setActivityBmpLoadCallback(BitmapLoadCallback activityBmpLoadCallback) {
+        this.activityBmpLoadCallback = activityBmpLoadCallback;
+    }
+
     public String getImageInputPath() {
         return mImageInputPath;
     }
@@ -149,6 +155,8 @@ public class TransformImageView extends ImageView {
 
                         mBitmapDecoded = true;
                         setImageBitmap(bitmap);
+                        if (activityBmpLoadCallback != null)
+                            activityBmpLoadCallback.onBitmapLoaded(bitmap, exifInfo, imageInputPath, imageOutputPath);
                     }
 
                     @Override

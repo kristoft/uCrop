@@ -9,11 +9,13 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.ColorInt;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.IdRes;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -34,7 +36,9 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.yalantis.ucrop.callback.BitmapCropCallback;
+import com.yalantis.ucrop.callback.BitmapLoadCallback;
 import com.yalantis.ucrop.model.AspectRatio;
+import com.yalantis.ucrop.model.ExifInfo;
 import com.yalantis.ucrop.util.SelectedStateListDrawable;
 import com.yalantis.ucrop.view.CropImageView;
 import com.yalantis.ucrop.view.GestureCropImageView;
@@ -117,6 +121,7 @@ public class UCropActivity extends AppCompatActivity {
 
         setupViews(intent);
         setImageData(intent);
+        setCallbackToAdjustAspectRatio();
         setInitialState();
         addBlockingView();
     }
@@ -195,6 +200,36 @@ public class UCropActivity extends AppCompatActivity {
             setResultError(new NullPointerException(getString(R.string.ucrop_error_input_data_is_absent)));
             finish();
         }
+    }
+
+
+    private void setCallbackToAdjustAspectRatio() {
+        mGestureCropImageView.setActivityBmpLoadCallback(new BitmapLoadCallback() {
+            @Override
+            public void onBitmapLoaded(@NonNull Bitmap bitmap, @NonNull ExifInfo exifInfo, @NonNull String imageInputPath, @Nullable String imageOutputPath) {
+                int width = bitmap.getWidth();
+                int height = bitmap.getHeight();
+
+                float aspectRatioX = getIntent().getFloatExtra(UCrop.EXTRA_ASPECT_RATIO_X, 0);
+                float aspectRatioY = getIntent().getFloatExtra(UCrop.EXTRA_ASPECT_RATIO_Y, 0);
+                float newAspectX = aspectRatioX;
+                float newAspectY = aspectRatioY;
+
+                if (width > height) {
+                    newAspectX = Math.max(aspectRatioX, aspectRatioY);
+                    newAspectY = Math.min(aspectRatioX, aspectRatioY);
+                } else {
+                    newAspectX = Math.min(aspectRatioX, aspectRatioY);
+                    newAspectY = Math.max(aspectRatioX, aspectRatioY);
+                }
+                mGestureCropImageView.setTargetAspectRatio(newAspectX / newAspectY);
+            }
+
+            @Override
+            public void onFailure(@NonNull Exception bitmapWorkerException) {
+                bitmapWorkerException.printStackTrace();
+            }
+        });
     }
 
     /**
@@ -489,7 +524,7 @@ public class UCropActivity extends AppCompatActivity {
         findViewById(R.id.wrapper_rotate_by_angle).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                rotateByAngle(90);
+                rotateByAngleAndResetScale(90);
             }
         });
     }
@@ -541,6 +576,12 @@ public class UCropActivity extends AppCompatActivity {
 
     private void rotateByAngle(int angle) {
         mGestureCropImageView.postRotate(angle);
+        mGestureCropImageView.setImageToWrapCropBounds();
+    }
+
+    private void rotateByAngleAndResetScale(int angle) {
+        mGestureCropImageView.postRotate(angle);
+        mGestureCropImageView.zoomOutImage(mGestureCropImageView.getMinScale());
         mGestureCropImageView.setImageToWrapCropBounds();
     }
 
